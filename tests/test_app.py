@@ -1,6 +1,7 @@
 import os
 
 import pytest
+from flask import current_app
 from pytest_httpserver import HTTPServer
 
 from ..app import app
@@ -15,7 +16,16 @@ def client(httpserver: HTTPServer):
         yield client
 
 
-def test_calling_root_returns_404(client):
-    rv = client.get("results")
-    assert rv.status_code == 404
+def test_calling_restults_with_get_method_returns_405(client):
+    rv = client.get("/test")
+    assert rv.status_code == 405
 
+
+def test_calling_restults_with_post_method_returns_200(client):
+    rv = client.post("/test", data={})
+    assert rv.status_code == 200
+
+
+def test_default_path_is_in_temp_dir():
+    with app.app_context():
+        assert app.config["DATA_DIR"].startswith("/tmp")

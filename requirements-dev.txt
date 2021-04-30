@@ -1,2 +1,6 @@
-pip-tools
-pre-commit
+pip-tools~=6.1
+pre-commit~=2.12
+pytest~=6.2
+coverage~=5
+pytest-httpserver~=1.0
+pytest-watch~=4.2

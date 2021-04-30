@@ -1,0 +1,21 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.1.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: debug-statements
+      - id: trailing-whitespace
+      - id: check-yaml
+  - repo: https://github.com/psf/black
+    rev: 20.8b1
+    hooks:
+      - id: black
+  - repo: https://github.com/jazzband/pip-tools
+    rev: 5.2.1
+    hooks:
+      - id: pip-compile
+  - repo: https://github.com/timothycrosley/isort
+    rev: 5.0.9
+    hooks:
+      - id: isort

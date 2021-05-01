@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 
 import pytest
+from bs4 import BeautifulSoup
 from flask import current_app
 from pytest_httpserver import HTTPServer
 
@@ -21,12 +22,39 @@ def client(httpserver: HTTPServer):
 
 def survey_factory(survey):
     data_dir = create_app(testing=True).config["DATA_DIR"]
+    survey_spec = {
+        "pages": [
+            {
+                "name": "page1",
+                "elements": [
+                    {
+                        "type": "rating",
+                        "name": "question1",
+                        "title": "What do you think about this test?",
+                        "isRequired": True,
+                        "rateValues": [
+                            {"value": 1, "text": "Awesome!"},
+                            {"value": 2, "text": "Pretty lame"},
+                        ],
+                    }
+                ],
+                "title": "Test survey",
+                "description": "A minimal survey used for testing purposes",
+            }
+        ]
+    }
     os.makedirs(os.path.join(data_dir, survey), exist_ok=True)
+    os.makedirs(os.path.join(data_dir, survey, "results"), exist_ok=True)
+    with open(os.path.join(data_dir, survey, "survey.json"), "w") as survey_spec_file:
+        json.dump(survey_spec, survey_spec_file, indent=2)
 
 
 def flush_survey_dir(survey):
     data_dir = create_app(testing=True).config["DATA_DIR"]
     try:
+        for filename in os.listdir(os.path.join(data_dir, survey, "results")):
+            os.remove(os.path.join(data_dir, survey, "results", filename))
+        os.rmdir(os.path.join(data_dir, survey, "results"))
         for filename in os.listdir(os.path.join(data_dir, survey)):
             os.remove(os.path.join(data_dir, survey, filename))
         os.rmdir(os.path.join(data_dir, survey))
@@ -34,9 +62,22 @@ def flush_survey_dir(survey):
         pass
 
 
-def test_calling_restults_with_get_method_returns_405(client):
+def test_calling_restults_with_get_method_returns_404_if_form_does_not_exist(client):
+    flush_survey_dir("test")
     rv = client.get("/test")
-    assert rv.status_code == 405
+    # I expect that the website returns OK and is parsable via html
+    assert rv.status_code == 404
+
+
+def test_calling_restults_with_get_method_returns_html_with_data_when_survey_exists(
+    client,
+):
+    survey_factory("questions")
+    rv = client.get("/questions")
+    # I expect that the website returns OK and is parsable via html and I a survey container to be presnt
+    assert rv.status_code == 200
+    page = BeautifulSoup(rv.data, "html.parser")
+    assert page.find(id="surveyContainer")
 
 
 def test_calling_restults_with_post_method_returns_200(client):
@@ -63,7 +104,11 @@ def test_writes_file_to_subfolder(client):
     survey_factory("test")
     rv = client.post("/test", json={})
     assert (
-        len(os.listdir(os.path.join(client.application.config["DATA_DIR"], "test")))
+        len(
+            os.listdir(
+                os.path.join(client.application.config["DATA_DIR"], "test", "results")
+            )
+        )
         == 1
     )
 
@@ -79,9 +124,9 @@ def test_post_writes_file_with_timestamp_prefix_writes_file(client, freezer):
     flush_survey_dir("test")
     survey_factory("test")
     rv = client.post("/test", json={})
-    filename = os.listdir(os.path.join(client.application.config["DATA_DIR"], "test"))[
-        0
-    ]
+    filename = os.listdir(
+        os.path.join(client.application.config["DATA_DIR"], "test", "results")
+    )[0]
     assert str(int(now.timestamp())) in filename
 
 
@@ -90,11 +135,11 @@ def test_post_writes_file_with_timestamp_prefix_writes_file(client):
     survey_factory("test")
     data = {"1234": 5678}
     rv = client.post("/test", json=data)
-    filename = os.listdir(os.path.join(client.application.config["DATA_DIR"], "test"))[
-        0
-    ]
+    filename = os.listdir(
+        os.path.join(client.application.config["DATA_DIR"], "test", "results")
+    )[0]
     with open(
-        os.path.join(client.application.config["DATA_DIR"], "test", filename)
+        os.path.join(client.application.config["DATA_DIR"], "test", "results", filename)
     ) as survey_file:
         assert data == json.load(survey_file)
 

@@ -5,7 +5,7 @@ import tempfile
 from datetime import datetime
 from os import environ, makedirs
 
-from flask import Flask, jsonify, request
+from flask import Flask, abort, jsonify, render_template, request
 
 
 def create_app(testing=False):
@@ -22,6 +22,25 @@ def create_app(testing=False):
 
     app.logger.setLevel(logging.INFO)
 
+    @app.route("/<survey>", methods=["GET"])
+    def survey(survey):
+        """Displays survey"""
+        try:
+            with open(
+                os.path.join(app.config["DATA_DIR"], survey, "survey.json")
+            ) as survey:
+                survey_spec = json.load(survey)
+                return render_template(
+                    "survey.html",
+                    survey_spec=survey_spec,
+                    survey_title=survey_spec["pages"][0]["title"],
+                )
+        except FileNotFoundError:
+            abort(404)
+        except json.JSONDecodeError as e:
+            app.logger.error(f"Received invalid data for survey name {survey}")
+            abort(505)
+
     @app.route("/<survey>", methods=["POST"])
     def results(survey):
         """Handles results form surveys"""
@@ -29,7 +48,7 @@ def create_app(testing=False):
             json_response = json.loads(request.data)
             with open(
                 tempfile.mkstemp(
-                    dir=os.path.join(app.config["DATA_DIR"], survey),
+                    dir=os.path.join(app.config["DATA_DIR"], survey, "results"),
                     prefix=str(int(datetime.now().timestamp())),
                     suffix=".json",
                 )[1],

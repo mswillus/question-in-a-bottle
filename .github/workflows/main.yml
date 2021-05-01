@@ -18,7 +18,11 @@ jobs:
   # This workflow contains a single job called "build"
   test:
     # The type of runner that the job will run on
-    runs-on: python:3.8
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['pypy-3.8', 'pypy-3.9']
+
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:

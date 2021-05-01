@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import datetime
 
@@ -49,13 +50,24 @@ def test_path_override():
 
 def test_writes_file(client):
     flush_data_dir()
-    rv = client.post("/test", data={})
+    rv = client.post("/test", json={})
     assert len(os.listdir(client.application.config["DATA_DIR"])) == 1
 
 
 def test_post_writes_file_with_timestamp_prefix_writes_file(client, freezer):
     now = datetime.now()
     flush_data_dir()
-    rv = client.post("/test", data={})
+    rv = client.post("/test", json={})
     filename = os.listdir(client.application.config["DATA_DIR"])[0]
     assert str(int(now.timestamp())) in filename
+
+
+def test_post_writes_file_with_timestamp_prefix_writes_file(client):
+    flush_data_dir()
+    data = {"1234": 5678}
+    rv = client.post("/test", json=data)
+    filename = os.listdir(client.application.config["DATA_DIR"])[0]
+    with open(
+        os.path.join(client.application.config["DATA_DIR"], filename)
+    ) as survey_file:
+        assert data == json.load(survey_file)

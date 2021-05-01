@@ -24,14 +24,18 @@ def create_app(testing=False):
     @app.route("/<survey>", methods=["POST"])
     def results(survey):
         """Handles results form surveys"""
-        result_file = tempfile.mkstemp(
-            dir=app.config["DATA_DIR"],
-            prefix=str(int(datetime.now().timestamp())),
-            suffix=".json",
-        )
         try:
             json_response = json.loads(request.data)
-            result_file.write(json.dumps(json_response, indent=2, sort_keys=True))
+            with open(
+                tempfile.mkstemp(
+                    dir=app.config["DATA_DIR"],
+                    prefix=str(int(datetime.now().timestamp())),
+                    suffix=".json",
+                )[1],
+                "w",
+            ) as result_file:
+                result_file.write(json.dumps(json_response, indent=2, sort_keys=True))
+                result_file.close()
         except json.JSONDecodeError as e:
             app.logger.error(e.msg)
         return jsonify({})

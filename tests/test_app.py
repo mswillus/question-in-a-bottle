@@ -1,5 +1,7 @@
 import json
 import os
+import shutil
+import tempfile
 from datetime import datetime
 
 import pytest
@@ -47,6 +49,20 @@ def survey_factory(survey):
     os.makedirs(os.path.join(data_dir, survey, "results"), exist_ok=True)
     with open(os.path.join(data_dir, survey, "survey.json"), "w") as survey_spec_file:
         json.dump(survey_spec, survey_spec_file, indent=2)
+
+
+def result_factory(survey):
+    data_dir = create_app(testing=True).config["DATA_DIR"]
+    with open(
+        os.path.join(
+            data_dir,
+            survey,
+            "results",
+            f"{str(int(datetime.now().timestamp()))}-xyz.json",
+        ),
+        "w",
+    ) as result_file:
+        json.dump({"question1": 1}, result_file, indent=2)
 
 
 def flush_survey_dir(survey):
@@ -207,3 +223,61 @@ def test_replace_survey(client):
         )
     ) as survey_file:
         assert {"test": "whoooo"} == json.load(survey_file)
+
+
+def test_calling_the_restults_endpoint_without_auth_token_produces_not_authorized(
+    client,
+):
+    rv = client.get("/new/results")
+    assert rv.status_code == 403
+
+
+def test_calling_the_results_endpoint_with_auth_token_is_OK(client):
+    flush_survey_dir("new")
+    survey_factory("new")
+    result_factory("new")
+    rv = client.get(
+        "/new/results",
+        headers={"Authorization": f"Token {client.application.config['AUTH_TOKEN']}"},
+    )
+    assert rv.status_code == 200
+
+
+def test_calling_the_results_endpoint_for_an_empty_survey_returns_204(client):
+    flush_survey_dir("new")
+    survey_factory("new")
+    rv = client.get(
+        "/new/results",
+        headers={"Authorization": f"Token {client.application.config['AUTH_TOKEN']}"},
+    )
+    assert rv.status_code == 204
+
+
+def test_calling_the_results_endpoint_with_auth_token_creates_and_exports_an_archive_with_results(
+    client,
+):
+    flush_survey_dir("new")
+    survey_factory("new")
+    result_factory("new")
+    rv = client.get(
+        "/new/results",
+        headers={"Authorization": f"Token {client.application.config['AUTH_TOKEN']}"},
+    )
+    filenames = os.listdir(
+        os.path.join(client.application.config["DATA_DIR"], "export")
+    )
+    assert "new.tar.gz" in filenames
+    tempdir = tempfile.mkdtemp()
+    shutil.unpack_archive(
+        os.path.join(client.application.config["DATA_DIR"], "export", "new.tar.gz"),
+        tempdir,
+    )
+    assert "survey.json" in os.listdir(tempdir)
+    assert "results" in os.listdir(tempdir)
+    assert "question1" in json.load(
+        open(
+            os.path.join(
+                tempdir, "results", os.listdir(os.path.join(tempdir, "results"))[0]
+            )
+        )
+    )

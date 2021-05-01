@@ -4,8 +4,17 @@ import os
 import tempfile
 from datetime import datetime
 from os import environ, makedirs
+from shutil import make_archive
 
-from flask import Flask, abort, jsonify, render_template, request
+from flask import (
+    Flask,
+    abort,
+    jsonify,
+    make_response,
+    render_template,
+    request,
+    send_file,
+)
 
 from .decorators import requires_authentication_token
 
@@ -81,6 +90,28 @@ def create_app(testing=False):
             app.logger.error(f"Received invalid data for new survey {survey}")
             abort(500)
         return jsonify({})
+
+    @app.route("/<survey>/results", methods=["GET"])
+    @requires_authentication_token
+    def export_results(survey):
+        export_path = os.path.join(app.config["DATA_DIR"], "export")
+        makedirs(export_path, exist_ok=True)
+        result_files = os.listdir(
+            os.path.join(app.config["DATA_DIR"], survey, "results")
+        )
+        if len(result_files) == 0:
+            return make_response(jsonify({}), 204)
+        else:
+            make_archive(
+                os.path.join(export_path, survey),
+                "gztar",
+                os.path.join(app.config["DATA_DIR"], survey),
+            )
+            response = make_response(
+                send_file(os.path.join(export_path, f"{survey}.tar.gz"))
+            )
+            response.headers.set("Content-Type", "application/x-tgz")
+            return response
 
     return app
 

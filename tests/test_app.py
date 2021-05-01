@@ -167,15 +167,6 @@ def test_calling_the_put_message_with_token_returns_ok(client):
     assert rv.status_code == 200
 
 
-def test_calling_the_put_message_with_token_returns_ok(client):
-    rv = client.put(
-        "/new",
-        json={"test": 1234},
-        headers={"Authorization": f"Token {client.application.config['AUTH_TOKEN']}"},
-    )
-    assert rv.status_code == 200
-
-
 def test_create_new_survey(client):
     # Given there are is no 'test-survey' survey
     flush_survey_dir("test-survey")

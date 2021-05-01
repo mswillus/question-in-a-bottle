@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import tempfile
 from datetime import datetime
 from os import environ, makedirs
@@ -28,7 +29,7 @@ def create_app(testing=False):
             json_response = json.loads(request.data)
             with open(
                 tempfile.mkstemp(
-                    dir=app.config["DATA_DIR"],
+                    dir=os.path.join(app.config["DATA_DIR"], survey),
                     prefix=str(int(datetime.now().timestamp())),
                     suffix=".json",
                 )[1],
@@ -36,6 +37,8 @@ def create_app(testing=False):
             ) as result_file:
                 result_file.write(json.dumps(json_response, indent=2, sort_keys=True))
                 result_file.close()
+        except FileNotFoundError:
+            app.logger.error(f"Received data for invalid survey name {survey}")
         except json.JSONDecodeError as e:
             app.logger.error(e.msg)
         return jsonify({})

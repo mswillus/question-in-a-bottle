@@ -19,10 +19,19 @@ def client(httpserver: HTTPServer):
         yield client
 
 
-def flush_data_dir():
+def survey_factory(survey):
     data_dir = create_app(testing=True).config["DATA_DIR"]
-    for filename in os.listdir(data_dir):
-        os.remove(os.path.join(data_dir, filename))
+    os.makedirs(os.path.join(data_dir, survey), exist_ok=True)
+
+
+def flush_survey_dir(survey):
+    data_dir = create_app(testing=True).config["DATA_DIR"]
+    try:
+        for filename in os.listdir(os.path.join(data_dir, survey)):
+            os.remove(os.path.join(data_dir, survey, filename))
+        os.rmdir(os.path.join(data_dir, survey))
+    except FileNotFoundError:
+        pass
 
 
 def test_calling_restults_with_get_method_returns_405(client):
@@ -31,6 +40,7 @@ def test_calling_restults_with_get_method_returns_405(client):
 
 
 def test_calling_restults_with_post_method_returns_200(client):
+    survey_factory("test")
     rv = client.post("/test", data={})
     assert rv.status_code == 200
 
@@ -48,26 +58,42 @@ def test_path_override():
         assert app.config["DATA_DIR"].startswith("./")
 
 
-def test_writes_file(client):
-    flush_data_dir()
+def test_writes_file_to_subfolder(client):
+    flush_survey_dir("test")
+    survey_factory("test")
     rv = client.post("/test", json={})
-    assert len(os.listdir(client.application.config["DATA_DIR"])) == 1
+    assert (
+        len(os.listdir(os.path.join(client.application.config["DATA_DIR"], "test")))
+        == 1
+    )
+
+
+def test_posting_to_non_extisting_survey_logs_error(client, caplog):
+    rv = client.post("/malformed", json={})
+    for record in caplog.records:
+        assert "invalid survey" in str(record)
 
 
 def test_post_writes_file_with_timestamp_prefix_writes_file(client, freezer):
     now = datetime.now()
-    flush_data_dir()
+    flush_survey_dir("test")
+    survey_factory("test")
     rv = client.post("/test", json={})
-    filename = os.listdir(client.application.config["DATA_DIR"])[0]
+    filename = os.listdir(os.path.join(client.application.config["DATA_DIR"], "test"))[
+        0
+    ]
     assert str(int(now.timestamp())) in filename
 
 
 def test_post_writes_file_with_timestamp_prefix_writes_file(client):
-    flush_data_dir()
+    flush_survey_dir("test")
+    survey_factory("test")
     data = {"1234": 5678}
     rv = client.post("/test", json=data)
-    filename = os.listdir(client.application.config["DATA_DIR"])[0]
+    filename = os.listdir(os.path.join(client.application.config["DATA_DIR"], "test"))[
+        0
+    ]
     with open(
-        os.path.join(client.application.config["DATA_DIR"], filename)
+        os.path.join(client.application.config["DATA_DIR"], "test", filename)
     ) as survey_file:
         assert data == json.load(survey_file)

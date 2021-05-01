@@ -147,7 +147,7 @@ def test_post_writes_file_with_timestamp_prefix_writes_file(client, freezer):
     assert str(int(now.timestamp())) in filename
 
 
-def test_post_writes_file_with_timestamp_prefix_writes_file(client):
+def test_post_writes_file_with_timestamp_prefix_writes_file_with_correct_data(client):
     flush_survey_dir("test")
     survey_factory("test")
     data = {"1234": 5678}

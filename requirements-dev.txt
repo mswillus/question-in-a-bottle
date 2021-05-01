@@ -1,6 +1,7 @@
 pip-tools~=6.1
 pre-commit~=2.12
 pytest~=6.2
+pytest-cov~=2.11
 coverage~=5.5
 pytest-httpserver~=1.0
 pytest-watch~=4.2

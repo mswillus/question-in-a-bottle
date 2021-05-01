@@ -1,16 +1,20 @@
 import json
 import logging
 import tempfile
-from os import environ
+from datetime import datetime
+from os import environ, makedirs
 
 from flask import Flask, jsonify, request
 
 
-def create_app():
+def create_app(testing=False):
     # create and configure the app
     app = Flask(__name__)
 
-    if "DATA_DIR" in environ:
+    if testing:
+        app.config["DATA_DIR"] = "./tests/__data"
+        makedirs(app.config["DATA_DIR"], exist_ok=True)
+    elif "DATA_DIR" in environ:
         app.config["DATA_DIR"] = environ["DATA_DIR"]
     else:
         app.config["DATA_DIR"] = tempfile.mkdtemp()
@@ -20,7 +24,11 @@ def create_app():
     @app.route("/<survey>", methods=["POST"])
     def results(survey):
         """Handles results form surveys"""
-        result_file = tempfile.mkstemp(dir=app.config["DATA_DIR"])
+        result_file = tempfile.mkstemp(
+            dir=app.config["DATA_DIR"],
+            prefix=str(int(datetime.now().timestamp())),
+            suffix=".json",
+        )
         try:
             json_response = json.loads(request.data)
             result_file.write(json.dumps(json_response, indent=2, sort_keys=True))

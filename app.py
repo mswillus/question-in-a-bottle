@@ -40,7 +40,7 @@ def create_app(testing=False):
         except FileNotFoundError:
             app.logger.error(f"Received data for invalid survey name {survey}")
         except json.JSONDecodeError as e:
-            app.logger.error(e.msg)
+            app.logger.error(f"Received invalid data for survey name {survey}")
         return jsonify({})
 
     return app

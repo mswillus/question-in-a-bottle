@@ -97,3 +97,11 @@ def test_post_writes_file_with_timestamp_prefix_writes_file(client):
         os.path.join(client.application.config["DATA_DIR"], "test", filename)
     ) as survey_file:
         assert data == json.load(survey_file)
+
+
+def test_post_invalid_data_results_in_error(client, caplog):
+    flush_survey_dir("test")
+    survey_factory("test")
+    rv = client.post("/test", data="Mal Formed")
+    for record in caplog.records:
+        assert "invalid data" in str(record)

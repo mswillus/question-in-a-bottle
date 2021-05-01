@@ -87,6 +87,7 @@ def test_calling_restults_with_post_method_returns_200(client):
 
 
 def test_default_path_is_in_temp_dir():
+    del os.environ["DATA_DIR"]
     app = create_app()
     with app.app_context():
         assert app.config["DATA_DIR"].startswith("/tmp")
@@ -150,3 +151,68 @@ def test_post_invalid_data_results_in_error(client, caplog):
     rv = client.post("/test", data="Mal Formed")
     for record in caplog.records:
         assert "invalid data" in str(record)
+
+
+def test_calling_the_put_message_without_auth_token_produces_not_authorized(client):
+    rv = client.put("/new", json={"test": 1234})
+    assert rv.status_code == 403
+
+
+def test_calling_the_put_message_with_token_returns_ok(client):
+    rv = client.put(
+        "/new",
+        json={"test": 1234},
+        headers={"Authorization": f"Token {client.application.config['AUTH_TOKEN']}"},
+    )
+    assert rv.status_code == 200
+
+
+def test_calling_the_put_message_with_token_returns_ok(client):
+    rv = client.put(
+        "/new",
+        json={"test": 1234},
+        headers={"Authorization": f"Token {client.application.config['AUTH_TOKEN']}"},
+    )
+    assert rv.status_code == 200
+
+
+def test_create_new_survey(client):
+    # Given there are is no 'test-survey' survey
+    flush_survey_dir("test-survey")
+    # When I create a new servey called "test-survey"
+    rv = client.put(
+        "/test-survey",
+        json={"test": "wheeee"},
+        headers={"Authorization": f"Token {client.application.config['AUTH_TOKEN']}"},
+    )
+    # I expect that the survey folder was created
+    filenames = os.listdir(
+        os.path.join(client.application.config["DATA_DIR"], "test-survey")
+    )
+    assert "survey.json" in filenames
+    # And I expect that the file contains the scheme
+    with open(
+        os.path.join(
+            client.application.config["DATA_DIR"], "test-survey", "survey.json"
+        )
+    ) as survey_file:
+        assert {"test": "wheeee"} == json.load(survey_file)
+
+
+def test_replace_survey(client):
+    # Given there are already is a 'test-survey' survey
+    flush_survey_dir("test-survey")
+    survey_factory("test-survey")
+    # When I overwrite the servey called "test-survey"
+    rv = client.put(
+        "/test-survey",
+        json={"test": "whoooo"},
+        headers={"Authorization": f"Token {client.application.config['AUTH_TOKEN']}"},
+    )
+    # I expect that the file contains the new scheme
+    with open(
+        os.path.join(
+            client.application.config["DATA_DIR"], "test-survey", "survey.json"
+        )
+    ) as survey_file:
+        assert {"test": "whoooo"} == json.load(survey_file)

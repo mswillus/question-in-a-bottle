@@ -7,6 +7,8 @@ from os import environ, makedirs
 
 from flask import Flask, abort, jsonify, render_template, request
 
+from .decorators import requires_authentication_token
+
 
 def create_app(testing=False):
     # create and configure the app
@@ -19,6 +21,8 @@ def create_app(testing=False):
         app.config["DATA_DIR"] = environ["DATA_DIR"]
     else:
         app.config["DATA_DIR"] = tempfile.mkdtemp()
+
+    app.config["AUTH_TOKEN"] = environ["AUTH_TOKEN"]
 
     app.logger.setLevel(logging.INFO)
 
@@ -60,6 +64,22 @@ def create_app(testing=False):
             app.logger.error(f"Received data for invalid survey name {survey}")
         except json.JSONDecodeError as e:
             app.logger.error(f"Received invalid data for survey name {survey}")
+        return jsonify({})
+
+    @app.route("/<survey>", methods=["PUT"])
+    @requires_authentication_token
+    def create_survey(survey):
+        """Displays survey"""
+        try:
+            makedirs(os.path.join(app.config["DATA_DIR"], survey), exist_ok=True)
+            json_response = json.loads(request.data)
+            with open(
+                os.path.join(app.config["DATA_DIR"], survey, "survey.json"), "w"
+            ) as survey_file:
+                json.dump(json_response, survey_file, indent=2, sort_keys=True)
+        except json.JSONDecodeError as e:
+            app.logger.error(f"Received invalid data for new survey {survey}")
+            abort(500)
         return jsonify({})
 
     return app

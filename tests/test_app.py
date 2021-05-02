@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from flask import current_app
 from pytest_httpserver import HTTPServer
 
-from ..app import create_app
+from src.app import create_app
 
 
 @pytest.fixture(scope="function")
@@ -103,17 +103,21 @@ def test_calling_restults_with_post_method_returns_200(client):
 
 
 def test_default_path_is_in_temp_dir():
+    data_dir = os.environ["DATA_DIR"]
     del os.environ["DATA_DIR"]
     app = create_app()
     with app.app_context():
         assert app.config["DATA_DIR"].startswith("/tmp")
+    os.environ["DATA_DIR"] = data_dir
 
 
 def test_path_override():
+    data_dir = os.environ["DATA_DIR"]
     os.environ["DATA_DIR"] = "./"
     app = create_app()
     with app.app_context():
         assert app.config["DATA_DIR"].startswith("./")
+    os.environ["DATA_DIR"] = data_dir
 
 
 def test_writes_file_to_subfolder(client):

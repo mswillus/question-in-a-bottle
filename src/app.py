@@ -23,11 +23,12 @@ def create_app(testing=False):
     # create and configure the app
     app = Flask(__name__)
 
-    if testing:
-        app.config["DATA_DIR"] = "./tests/__data"
-        makedirs(app.config["DATA_DIR"], exist_ok=True)
-    elif "DATA_DIR" in environ:
+    if "DATA_DIR" in environ:
         app.config["DATA_DIR"] = environ["DATA_DIR"]
+        makedirs(app.config["DATA_DIR"], exist_ok=True)
+    elif testing:
+        app.config["DATA_DIR"] = "__data"
+        makedirs(app.config["DATA_DIR"], exist_ok=True)
     else:
         app.config["DATA_DIR"] = tempfile.mkdtemp()
 

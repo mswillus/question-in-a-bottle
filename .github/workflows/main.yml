@@ -2,7 +2,7 @@
 
 name: CI
 
-# Controls when the action will run. 
+# Controls when the action will run.
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
@@ -32,6 +32,8 @@ jobs:
         run: pip install -r requirements-dev.txt -r requirements.txt
       - name: Run tests
         run: pytest
+        env:
+          AUTH_TOKEN: INSECURE_TOKEN_FOR_TESTING
       - name: pytest coverage
         # You may pin to the exact commit or the version.
         # uses: alexanderdamiani/pytester-cov@d469717d439665e8e7a64afb8dcc8f211a5638de

@@ -216,6 +216,10 @@ def test_create_new_survey(client):
         )
     ) as survey_file:
         assert {"test": "wheeee"} == json.load(survey_file)
+    # And I expect that the results folder was created
+    assert os.path.exists(
+        os.path.join(client.application.config["DATA_DIR"], "test-survey", "results")
+    )
 
 
 def test_replace_survey(client):

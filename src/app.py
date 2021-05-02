@@ -82,6 +82,9 @@ def create_app(testing=False):
         """Displays survey"""
         try:
             makedirs(os.path.join(app.config["DATA_DIR"], survey), exist_ok=True)
+            makedirs(
+                os.path.join(app.config["DATA_DIR"], survey, "results"), exist_ok=True
+            )
             json_response = json.loads(request.data)
             with open(
                 os.path.join(app.config["DATA_DIR"], survey, "survey.json"), "w"

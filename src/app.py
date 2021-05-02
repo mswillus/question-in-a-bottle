@@ -27,7 +27,7 @@ def create_app(testing=False):
         app.config["DATA_DIR"] = environ["DATA_DIR"]
         makedirs(app.config["DATA_DIR"], exist_ok=True)
     elif testing:
-        app.config["DATA_DIR"] = "__data"
+        app.config["DATA_DIR"] = os.path.join(environ["PWD"], "__data")
         makedirs(app.config["DATA_DIR"], exist_ok=True)
     else:
         app.config["DATA_DIR"] = tempfile.mkdtemp()

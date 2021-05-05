@@ -13,16 +13,18 @@ It runs stateless and stand-alone on your own computer or server. It does not us
 
 ## Usage
 
-To create a survey, visit [the surveyJS creator](https://surveyjs.io/create-survey)
+To create a survey, visit [the surveyJS creator](https://surveyjs.io/create-survey).
 Once you are happy with the results, download the survey and save it as a `JSON` file.
-After you installed *survey in a bottle* on your server, use the API to upload your survey. You can use good old `curl` to do that.
+After you installed *survey in a bottle* on your server, use the API to upload your survey.
+You can use good old `curl` to do that.
 From your command line simply run
 
 ```
 curl https://survey.example.net/survey-name -H 'Authorization: Token YOUR_SECRET_GOES_HERE' -H "Content-Type: application/json" -X PUT --data @survey.json
 ```
 
-The survey is now available at `https://survey.example.net/survey-name`
+The survey is now available at `https://survey.example.net/survey-name`.
+
 You can upload as many surveys as you like but every survey needs a unique name (replace `survey-name` with something that makes sense to you).
 If you need to edit the survey, just overwrite the existing one with the same command.
 
@@ -36,8 +38,9 @@ To get the survey results you can use `wget`:
 wget https://survey.example.net/survey-name/results --header 'Authorization: Token YOUR_SECRET_GOES_HERE' -O results.tar.gz
 ```
 
-The results are stored on your servers file system. By default the app creates a new temporary directory
-Every result is saved in a separate `.json` file. The filename contains a UNIX time stamp.
+The results are stored in your server's file system. By default they are stored in a temporary directory.
+Every result is saved in a separate `.json` file.
+The filename contains a UNIX time stamp of the moment the result was submitted.
 
 
 ## Run via Podman or Docker
